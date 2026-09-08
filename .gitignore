@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+venv/
+env/
+
+# Modell (groß, nicht auf GitHub hochladen!)
+model/
+
+# Streamlit Cache
+.streamlit/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
