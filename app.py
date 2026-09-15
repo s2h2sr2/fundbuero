@@ -3,6 +3,7 @@ import numpy as np
 from PIL import Image
 import os
 from datetime import date
+import tensorflow as tf
 import tf_keras as tf
 model = tf.keras.models.load_model(MODEL_PATH)
 # ─────────────────────────────────────────
