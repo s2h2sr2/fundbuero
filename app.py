@@ -4,7 +4,8 @@ from PIL import Image
 import tensorflow as tf
 import os
 from datetime import date
-
+import tf_keras as tf
+model = tf.keras.models.load_model(MODEL_PATH)
 # ─────────────────────────────────────────
 # Seitenkonfiguration
 # ─────────────────────────────────────────
