@@ -3,3 +3,4 @@ tf-keras
 h5py
 numpy>=1.24.0
 Pillow>=10.0.0
+tensorflow>=2.13.0
