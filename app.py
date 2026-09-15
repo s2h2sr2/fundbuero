@@ -1,53 +1,64 @@
 import streamlit as st
+import numport streamlit as st
 import numpy as np
 from PIL import Image
+import tflite_runtime.interpreter as tflite
 import os
 from datetime import date
-import tensorflow as tf
-import tf_keras as tf
-model = tf.keras.models.load_model(MODEL_PATH)
+
 # ─────────────────────────────────────────
 # Seitenkonfiguration
 # ─────────────────────────────────────────
+
 st.set_page_config(page_title="Das Fundbüro", page_icon="🔍", layout="wide")
 
 # ─────────────────────────────────────────
 # Modell laden (einmalig, gecacht)
 # ─────────────────────────────────────────
-MODEL_PATH = "modes/keras_model.h5"
+
+MODEL_PATH = "modes/model.tflite"
 KATEGORIEN = ["Hoodie", "Hose", "Flasche", "Schuhe"]
-IMG_SIZE = (224, 224)  # anpassen, falls dein Modell andere Größe erwartet
+IMG_SIZE = (224, 224)
 
 @st.cache_resource
 def load_model():
     if not os.path.exists(MODEL_PATH):
         st.error(f"❌ Modell nicht gefunden unter: {MODEL_PATH}")
         st.stop()
-    model = tf.keras.models.load_model(MODEL_PATH)
-    return model
+    interpreter = tflite.Interpreter(model_path=MODEL_PATH)
+    interpreter.allocate_tensors()
+    return interpreter
 
-model = load_model()
+interpreter = load_model()
 
 # ─────────────────────────────────────────
 # Hilfsfunktion: Bild klassifizieren
 # ─────────────────────────────────────────
+
 def klassifiziere_bild(image: Image.Image) -> str:
     img = image.convert("RGB").resize(IMG_SIZE)
-    img_array = np.array(img) / 255.0
+    img_array = np.array(img, dtype=np.float32) / 255.0
     img_array = np.expand_dims(img_array, axis=0)
-    vorhersage = model.predict(img_array)
+
+    input_details = interpreter.get_input_details()
+    output_details = interpreter.get_output_details()
+    interpreter.set_tensor(input_details[0]['index'], img_array)
+    interpreter.invoke()
+    vorhersage = interpreter.get_tensor(output_details[0]['index'])
     index = int(np.argmax(vorhersage))
     return KATEGORIEN[index]
 
 # ─────────────────────────────────────────
 # Session State für gefundene Gegenstände
 # ─────────────────────────────────────────
+
 if "gegenstaende" not in st.session_state:
     st.session_state.gegenstaende = []
 
 # ─────────────────────────────────────────
 # HEADER / LOGO
 # ─────────────────────────────────────────
+
 st.markdown("""
 <div style='background-color:#1a1a2e; padding: 2rem 2rem 1rem 2rem; border-radius: 12px; margin-bottom: 1rem;'>
     <h1 style='color:white; font-size: 3rem; margin:0;'>Das <span style='color:#e94560;'>Fund</span><span style='color:white;'>büro</span> 🔍</h1>
@@ -57,17 +68,17 @@ st.markdown("""
 # ─────────────────────────────────────────
 # ZWEI SPALTEN: Links = Finden, Rechts = Suchen
 # ─────────────────────────────────────────
+
 col_links, col_rechts = st.columns(2, gap="large")
 
 # ══════════════════════════════════════════
 # LINKE SPALTE: Gegenstand hochladen
 # ══════════════════════════════════════════
+
 with col_links:
     st.markdown("## 📦 Hast du was gefunden?")
-    st.markdown("""
-    > Hier kannst du alles, was du findest, hochladen,  
-    > damit Leute ihr Eigentum wiederfinden können.
-    """)
+    st.markdown("""> Hier kannst du alles, was du findest, hochladen,
+> damit Leute ihr Eigentum wiederfinden können.""")
 
     uploaded_file = st.file_uploader(
         "Bild hochladen (JPG, PNG, JPEG)",
@@ -103,47 +114,31 @@ with col_links:
 # ══════════════════════════════════════════
 # RECHTE SPALTE: Suchen & Filtern
 # ══════════════════════════════════════════
+
 with col_rechts:
     st.markdown("## 🔍 Hast du was verloren?")
-    st.markdown("""
-    > Hiermit kannst du deinen verlorenen Gegenstand suchen.  
-    > Mit hilfreichen Filtern geht es ganz fix.
-    """)
+    st.markdown("""> Hiermit kannst du deinen verlorenen Gegenstand suchen.
+> Mit hilfreichen Filtern geht es ganz fix.""")
 
     st.markdown("### 🎛️ Filter")
-
-    filter_kategorie = st.selectbox(
-        "Kategorie", ["Alle"] + KATEGORIEN
-    )
+    filter_kategorie = st.selectbox("Kategorie", ["Alle"] + KATEGORIEN)
     filter_farbe = st.text_input("Farbe", placeholder="z.B. Rot")
-    filter_groesse = st.selectbox(
-        "Größe", ["Alle", "XS", "S", "M", "L", "XL", "XXL", "Keine Angabe"]
-    )
+    filter_groesse = st.selectbox("Größe", ["Alle", "XS", "S", "M", "L", "XL", "XXL", "Keine Angabe"])
     filter_material = st.text_input("Material", placeholder="z.B. Leder")
 
     st.markdown("---")
     st.markdown("### 🗂️ Ergebnisse")
 
-    # Filtern
     ergebnisse = st.session_state.gegenstaende
 
     if filter_kategorie != "Alle":
         ergebnisse = [e for e in ergebnisse if e["kategorie"] == filter_kategorie]
-
     if filter_farbe.strip():
-        ergebnisse = [
-            e for e in ergebnisse
-            if filter_farbe.strip().lower() in e["farbe"].lower()
-        ]
-
+        ergebnisse = [e for e in ergebnisse if filter_farbe.strip().lower() in e["farbe"].lower()]
     if filter_groesse != "Alle":
         ergebnisse = [e for e in ergebnisse if e["groesse"] == filter_groesse]
-
     if filter_material.strip():
-        ergebnisse = [
-            e for e in ergebnisse
-            if filter_material.strip().lower() in e["material"].lower()
-        ]
+        ergebnisse = [e for e in ergebnisse if filter_material.strip().lower() in e["material"].lower()]
 
     if not ergebnisse:
         st.info("ℹ️ Keine Gegenstände gefunden. Passe deine Filter an!")
