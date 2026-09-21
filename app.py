@@ -10,7 +10,7 @@ import io
 # Seitenkonfiguration
 # ─────────────────────────────────────────
 
-st.set_page_config(page_title="Das Fundbüro", page_icon="🔍", layout="wide")
+st.set_page_config(page_title="Das Fundbüro", page_icon="", layout="wide")
 
 # ─────────────────────────────────────────
 # Modell laden (einmalig, gecacht)
