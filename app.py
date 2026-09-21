@@ -91,7 +91,7 @@ col_links, col_rechts = st.columns(2, gap="large")
 # ══════════════════════════════════════════
 
 with col_links:
-    st.markdown("## 📦 Hast du was gefunden?")
+    st.markdown("##  Hast du was gefunden?")
     st.markdown("""> Hier kannst du alles, was du findest, hochladen,
 > damit Leute ihr Eigentum wiederfinden können.""")
 
@@ -104,17 +104,17 @@ with col_links:
         image = Image.open(uploaded_file)
         st.image(image, caption="Hochgeladenes Bild", use_container_width=True)
 
-        with st.spinner("🤖 KI analysiert das Bild..."):
+        with st.spinner(" KI analysiert das Bild..."):
             kategorie, konfidenz = klassifiziere_bild(image)
 
-        st.success(f"✅ Erkannte Kategorie: **{kategorie}** ({konfidenz:.1f}% sicher)")
+        st.success(f" Erkannte Kategorie: **{kategorie}** ({konfidenz:.1f}% sicher)")
 
         farbe = st.text_input("Farbe des Gegenstands", placeholder="z.B. Blau")
         groesse = st.selectbox("Größe", ["–", "XS", "S", "M", "L", "XL", "XXL", "Keine Angabe"])
         material = st.text_input("Material (optional)", placeholder="z.B. Baumwolle")
         funddatum = st.date_input("Funddatum", value=date.today())
 
-        if st.button("💾 Gegenstand eintragen", use_container_width=True):
+        if st.button(" Gegenstand eintragen", use_container_width=True):
             eintrag = {
                 "bild": bild_zu_bytes(image),
                 "kategorie": kategorie,
@@ -124,25 +124,25 @@ with col_links:
                 "datum": str(funddatum),
             }
             st.session_state.gegenstaende.append(eintrag)
-            st.success("🎉 Gegenstand wurde eingetragen!")
+            st.success(" Gegenstand wurde eingetragen!")
 
 # ══════════════════════════════════════════
 # RECHTE SPALTE: Suchen & Filtern
 # ══════════════════════════════════════════
 
 with col_rechts:
-    st.markdown("## 🔍 Hast du was verloren?")
+    st.markdown("##  Hast du was verloren?")
     st.markdown("""> Hiermit kannst du deinen verlorenen Gegenstand suchen.
 > Mit hilfreichen Filtern geht es ganz fix.""")
 
-    st.markdown("### 🎛️ Filter")
+    st.markdown("###  Filter")
     filter_kategorie = st.selectbox("Kategorie", ["Alle"] + KATEGORIEN)
     filter_farbe = st.text_input("Farbe", placeholder="z.B. Rot")
     filter_groesse = st.selectbox("Größe", ["Alle", "XS", "S", "M", "L", "XL", "XXL", "Keine Angabe"])
     filter_material = st.text_input("Material", placeholder="z.B. Leder")
 
     st.markdown("---")
-    st.markdown("### 🗂️ Ergebnisse")
+    st.markdown("###  Ergebnisse")
 
     ergebnisse = st.session_state.gegenstaende
 
@@ -156,7 +156,7 @@ with col_rechts:
         ergebnisse = [e for e in ergebnisse if filter_material.strip().lower() in e["material"].lower()]
 
     if not ergebnisse:
-        st.info("ℹ️ Keine Gegenstände gefunden. Passe deine Filter an!")
+        st.info(" Keine Gegenstände gefunden. Passe deine Filter an!")
     else:
         for i, eintrag in enumerate(ergebnisse):
             with st.container(border=True):
@@ -169,6 +169,6 @@ with col_rechts:
                     st.markdown(f"**Größe:** {eintrag['groesse']}")
                     st.markdown(f"**Material:** {eintrag['material'] or '–'}")
                     st.markdown(f"**Datum:** {eintrag['datum']}")
-                    if st.button("🗑️ Entfernen", key=f"del_{i}"):
+                    if st.button(" Entfernen", key=f"del_{i}"):
                         st.session_state.gegenstaende.pop(i)
                         st.rerun()
