@@ -1,7 +1,7 @@
-import streamlit as st
+iimport streamlit as st
 import numpy as np
 from PIL import Image
-import tflite_runtime.interpreter as tflite
+import tensorflow as tf
 import os
 from datetime import date
 
@@ -15,7 +15,7 @@ st.set_page_config(page_title="Das Fundbüro", page_icon="🔍", layout="wide")
 # Modell laden (einmalig, gecacht)
 # ─────────────────────────────────────────
 
-MODEL_PATH = "models.tflite"
+MODEL_PATH = "models/model.h5"
 KATEGORIEN = ["Hoodie", "Hose", "Flasche", "Schuhe"]
 IMG_SIZE = (224, 224)
 
@@ -24,11 +24,10 @@ def load_model():
     if not os.path.exists(MODEL_PATH):
         st.error(f"❌ Modell nicht gefunden unter: {MODEL_PATH}")
         st.stop()
-    interpreter = tflite.Interpreter(model_path=MODEL_PATH)
-    interpreter.allocate_tensors()
-    return interpreter
+    model = tf.keras.models.load_model(MODEL_PATH)
+    return model
 
-interpreter = load_model()
+model = load_model()
 
 # ─────────────────────────────────────────
 # Hilfsfunktion: Bild klassifizieren
@@ -38,12 +37,7 @@ def klassifiziere_bild(image: Image.Image) -> str:
     img = image.convert("RGB").resize(IMG_SIZE)
     img_array = np.array(img, dtype=np.float32) / 255.0
     img_array = np.expand_dims(img_array, axis=0)
-
-    input_details = interpreter.get_input_details()
-    output_details = interpreter.get_output_details()
-    interpreter.set_tensor(input_details[0]['index'], img_array)
-    interpreter.invoke()
-    vorhersage = interpreter.get_tensor(output_details[0]['index'])
+    vorhersage = model.predict(img_array)
     index = int(np.argmax(vorhersage))
     return KATEGORIEN[index]
 
