@@ -4,6 +4,7 @@ from PIL import Image
 import tensorflow as tf
 import os
 from datetime import date
+import io
 
 # ─────────────────────────────────────────
 # Seitenkonfiguration
@@ -19,12 +20,23 @@ MODEL_PATH = "models/dein_model.h5"
 KATEGORIEN = ["Hoodie", "Hose", "Flasche", "Schuhe"]
 IMG_SIZE = (224, 224)
 
+# Workaround für Keras 3 Versionskonflikt
+from tensorflow.keras.layers import DepthwiseConv2D
+
+class FixedDepthwiseConv2D(DepthwiseConv2D):
+    def __init__(self, **kwargs):
+        kwargs.pop("groups", None)
+        super().__init__(**kwargs)
+
 @st.cache_resource
 def load_model():
     if not os.path.exists(MODEL_PATH):
         st.error(f"❌ Modell nicht gefunden unter: {MODEL_PATH}")
         st.stop()
-    model = tf.keras.models.load_model(MODEL_PATH)
+    model = tf.keras.models.load_model(
+        MODEL_PATH,
+        custom_objects={"DepthwiseConv2D": FixedDepthwiseConv2D}
+    )
     return model
 
 model = load_model()
@@ -33,13 +45,23 @@ model = load_model()
 # Hilfsfunktion: Bild klassifizieren
 # ─────────────────────────────────────────
 
-def klassifiziere_bild(image: Image.Image) -> str:
+def klassifiziere_bild(image: Image.Image) -> tuple:
     img = image.convert("RGB").resize(IMG_SIZE)
     img_array = np.array(img, dtype=np.float32) / 255.0
     img_array = np.expand_dims(img_array, axis=0)
     vorhersage = model.predict(img_array)
     index = int(np.argmax(vorhersage))
-    return KATEGORIEN[index]
+    konfidenz = float(np.max(vorhersage)) * 100
+    return KATEGORIEN[index], konfidenz
+
+# ─────────────────────────────────────────
+# Bild als Bytes speichern (Speichereffizienz)
+# ─────────────────────────────────────────
+
+def bild_zu_bytes(image: Image.Image) -> bytes:
+    buf = io.BytesIO()
+    image.save(buf, format="PNG")
+    return buf.getvalue()
 
 # ─────────────────────────────────────────
 # Session State für gefundene Gegenstände
@@ -83,9 +105,9 @@ with col_links:
         st.image(image, caption="Hochgeladenes Bild", use_container_width=True)
 
         with st.spinner("🤖 KI analysiert das Bild..."):
-            kategorie = klassifiziere_bild(image)
+            kategorie, konfidenz = klassifiziere_bild(image)
 
-        st.success(f"✅ Erkannte Kategorie: **{kategorie}**")
+        st.success(f"✅ Erkannte Kategorie: **{kategorie}** ({konfidenz:.1f}% sicher)")
 
         farbe = st.text_input("Farbe des Gegenstands", placeholder="z.B. Blau")
         groesse = st.selectbox("Größe", ["–", "XS", "S", "M", "L", "XL", "XXL", "Keine Angabe"])
@@ -94,7 +116,7 @@ with col_links:
 
         if st.button("💾 Gegenstand eintragen", use_container_width=True):
             eintrag = {
-                "bild": image,
+                "bild": bild_zu_bytes(image),
                 "kategorie": kategorie,
                 "farbe": farbe,
                 "groesse": groesse,
@@ -136,7 +158,7 @@ with col_rechts:
     if not ergebnisse:
         st.info("ℹ️ Keine Gegenstände gefunden. Passe deine Filter an!")
     else:
-        for eintrag in ergebnisse:
+        for i, eintrag in enumerate(ergebnisse):
             with st.container(border=True):
                 img_col, info_col = st.columns([1, 2])
                 with img_col:
@@ -147,3 +169,6 @@ with col_rechts:
                     st.markdown(f"**Größe:** {eintrag['groesse']}")
                     st.markdown(f"**Material:** {eintrag['material'] or '–'}")
                     st.markdown(f"**Datum:** {eintrag['datum']}")
+                    if st.button("🗑️ Entfernen", key=f"del_{i}"):
+                        st.session_state.gegenstaende.pop(i)
+                        st.rerun()
