@@ -69,44 +69,45 @@ if "seite" not in st.session_state:
     st.session_state.seite = "home"
 
 # ─────────────────────────────────────────
-# NAVIGATIONSLEISTE
+# HEADER mit Navigation
 # ─────────────────────────────────────────
 
 st.markdown("""
-<div style='background-color:#1a1a2e; padding: 1rem 2rem; display: flex;
-     justify-content: space-between; align-items: center; border-radius: 12px;
-     margin-bottom: 1.5rem;'>
-    <h1 style='color:white; font-size: 2.5rem; margin:0;'>
-        Das <span style='color:#e94560;'>Fund</span>büro 🔍
+<div style='background-color:#1a1a2e; padding: 1.5rem 2rem;
+     border-radius: 12px; margin-bottom: 1.5rem;
+     display:flex; align-items:center; justify-content:space-between;'>
+    <h1 style='color:white; font-size:3rem; margin:0;'>
+        Das <span style='color:#e94560;'>Fund</span><span style='color:white;'>büro</span> 🔍
     </h1>
 </div>
 """, unsafe_allow_html=True)
 
-nav_col1, nav_col2, nav_col3 = st.columns([1, 1, 6])
-with nav_col1:
+# Navigationsleiste
+nav1, nav2, nav3 = st.columns([1, 1, 8])
+with nav1:
     if st.button("🏠 Start", use_container_width=True):
         st.session_state.seite = "home"
-with nav_col2:
+with nav2:
     if st.button("🔎 Suchen", use_container_width=True):
         st.session_state.seite = "suchen"
 
 st.markdown("---")
 
 # ─────────────────────────────────────────
-# SEITE: HOME (Landing Page)
+# SEITE: HOME
 # ─────────────────────────────────────────
 
 if st.session_state.seite == "home":
 
-    # Was ist das Fundbüro?
     st.markdown("## 📦 Was ist das Fundbüro?")
     st.markdown("")
 
-    box_links, box_rechts = st.columns(2, gap="large")
+    col_l, col_r = st.columns(2, gap="large")
 
-    with box_links:
+    with col_l:
         st.markdown("""
-        <div style='background-color:#1a1a2e; border-radius:12px; padding:2rem; color:white; height:100%;'>
+        <div style='background-color:#1a1a2e; border-radius:12px;
+             padding:2rem; color:white;'>
             <h3>🟢 Hast du was gefunden?</h3>
             <p>Hier kannst du alles, was du findest, hochladen,
             damit Leute ihr Eigentum wiederfinden können.</p>
@@ -116,16 +117,17 @@ if st.session_state.seite == "home":
         if st.button("➕ Gegenstand eintragen", use_container_width=True):
             st.session_state.seite = "eintragen"
 
-    with box_rechts:
+    with col_r:
         st.markdown("""
-        <div style='background-color:#1a1a2e; border-radius:12px; padding:2rem; color:white; height:100%;'>
+        <div style='background-color:#1a1a2e; border-radius:12px;
+             padding:2rem; color:white;'>
             <h3>🔴 Hast du was verloren?</h3>
             <p>Hiermit kannst du deinen verlorenen Gegenstand suchen.
             Mit hilfreichen Filtern geht es ganz fix.</p>
         </div>
         """, unsafe_allow_html=True)
         st.markdown("")
-        if st.button("🔎 Jetzt suchen", use_container_width=True):
+        if st.button("🔍 Jetzt suchen", use_container_width=True):
             st.session_state.seite = "suchen"
 
 # ─────────────────────────────────────────
@@ -150,19 +152,19 @@ elif st.session_state.seite == "eintragen":
 
         st.success(f"✅ Erkannte Kategorie: **{kategorie}** ({konfidenz:.1f}% sicher)")
 
-        farbe    = st.text_input("Farbe des Gegenstands", placeholder="z.B. Blau")
-        groesse  = st.selectbox("Größe", ["–", "XS", "S", "M", "L", "XL", "XXL", "Keine Angabe"])
-        material = st.text_input("Material (optional)", placeholder="z.B. Baumwolle")
+        farbe     = st.text_input("Farbe des Gegenstands", placeholder="z.B. Blau")
+        groesse   = st.selectbox("Größe", ["–", "XS", "S", "M", "L", "XL", "XXL", "Keine Angabe"])
+        material  = st.text_input("Material (optional)", placeholder="z.B. Baumwolle")
         funddatum = st.date_input("Funddatum", value=date.today())
 
         if st.button("💾 Gegenstand eintragen", use_container_width=True):
             eintrag = {
-                "bild": bild_zu_bytes(image),
+                "bild":      bild_zu_bytes(image),
                 "kategorie": kategorie,
-                "farbe": farbe,
-                "groesse": groesse,
-                "material": material,
-                "datum": str(funddatum),
+                "farbe":     farbe,
+                "groesse":   groesse,
+                "material":  material,
+                "datum":     str(funddatum),
             }
             st.session_state.gegenstaende.append(eintrag)
             st.success("✅ Gegenstand wurde eingetragen!")
@@ -175,18 +177,20 @@ elif st.session_state.seite == "suchen":
 
     st.markdown("## 🔎 Gegenstand suchen")
 
-    # ── Filterleiste ──
+    # ── Filterleiste (horizontal, 4 Spalten) ──
     st.markdown("### 🎛️ Filter")
     f1, f2, f3, f4 = st.columns(4)
 
     with f1:
-        filter_kategorie = st.selectbox("Kategorie", ["Alle"] + KATEGORIEN)
-    with f2:
         filter_farbe = st.text_input("Farbe", placeholder="z.B. Rot")
-    with f3:
+    with f2:
         filter_groesse = st.selectbox("Größe", ["Alle", "XS", "S", "M", "L", "XL", "XXL", "Keine Angabe"])
+    with f3:
+        filter_datum = st.text_input("Datum", placeholder="z.B. 2024-06-01")
     with f4:
         filter_material = st.text_input("Material", placeholder="z.B. Leder")
+
+    filter_kategorie = st.selectbox("Kategorie", ["Alle"] + KATEGORIEN)
 
     st.markdown("---")
 
@@ -199,16 +203,17 @@ elif st.session_state.seite == "suchen":
         ergebnisse = [e for e in ergebnisse if filter_farbe.strip().lower() in e["farbe"].lower()]
     if filter_groesse != "Alle":
         ergebnisse = [e for e in ergebnisse if e["groesse"] == filter_groesse]
+    if filter_datum.strip():
+        ergebnisse = [e for e in ergebnisse if filter_datum.strip() in e["datum"]]
     if filter_material.strip():
         ergebnisse = [e for e in ergebnisse if filter_material.strip().lower() in e["material"].lower()]
 
-    # ── Ergebnisse als Karten im Grid ──
+    # ── Ergebnisse als Karten-Grid (3 pro Zeile) ──
     st.markdown("### 📋 Ergebnisse")
 
     if not ergebnisse:
         st.info("😕 Keine Gegenstände gefunden. Passe deine Filter an!")
     else:
-        # 3 Karten pro Zeile
         cols = st.columns(3)
         for i, eintrag in enumerate(ergebnisse):
             with cols[i % 3]:
