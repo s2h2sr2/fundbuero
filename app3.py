@@ -73,21 +73,21 @@ if "seite" not in st.session_state:
 # ─────────────────────────────────────────
 
 st.markdown("""
-<div style='background-color:#6c3483; padding: 1.5rem 2rem;
+<div style='background-color:#7a67ee; padding: 1.5rem 2rem;
      border-radius: 12px; margin-bottom: 1.5rem;
      display:flex; align-items:center; justify-content:space-between;'>
     <h1 style='color:white; font-size:3rem; margin:0;'>
-        Das <span style='color:#f4d03f;'>Fund</span><span style='color:white;'>büro</span> 🔍
+        Das <span style='color:#ffd700;'>Fund</span><span style='color:white;'>büro</span> 🔍
     </h1>
 </div>
 """, unsafe_allow_html=True)
 
 nav1, nav2, nav3 = st.columns([1, 1, 8])
 with nav1:
-    if st.button("Start", use_container_width=True):
+    if st.button("🏠 Start", use_container_width=True):
         st.session_state.seite = "home"
 with nav2:
-    if st.button("Suchen", use_container_width=True):
+    if st.button("🔎 Suchen", use_container_width=True):
         st.session_state.seite = "suchen"
 
 st.markdown("---")
@@ -98,35 +98,35 @@ st.markdown("---")
 
 if st.session_state.seite == "home":
 
-    st.markdown("## Was ist das Fundbüro?")
+    st.markdown("## 📦 Was ist das Fundbüro?")
     st.markdown("")
 
     col_l, col_r = st.columns(2, gap="large")
 
     with col_l:
         st.markdown("""
-        <div style='background-color:#6c3483; border-radius:12px;
+        <div style='background-color:#7a67ee; border-radius:12px;
              padding:2rem; color:white;'>
-            <h3>Hast du was gefunden?</h3>
+            <h3>🟢 Hast du was gefunden?</h3>
             <p>Hier kannst du alles, was du findest, hochladen,
             damit Leute ihr Eigentum wiederfinden können.</p>
         </div>
         """, unsafe_allow_html=True)
         st.markdown("")
-        if st.button("Gegenstand eintragen", use_container_width=True):
+        if st.button("➕ Gegenstand eintragen", use_container_width=True):
             st.session_state.seite = "eintragen"
 
     with col_r:
         st.markdown("""
-        <div style='background-color:#6c3483; border-radius:12px;
+        <div style='background-color:#7a67ee; border-radius:12px;
              padding:2rem; color:white;'>
-            <h3>Hast du was verloren?</h3>
+            <h3>🔴 Hast du was verloren?</h3>
             <p>Hiermit kannst du deinen verlorenen Gegenstand suchen.
             Mit hilfreichen Filtern geht es ganz fix.</p>
         </div>
         """, unsafe_allow_html=True)
         st.markdown("")
-        if st.button("Jetzt suchen", use_container_width=True):
+        if st.button("🔍 Jetzt suchen", use_container_width=True):
             st.session_state.seite = "suchen"
 
 # ─────────────────────────────────────────
@@ -135,7 +135,7 @@ if st.session_state.seite == "home":
 
 elif st.session_state.seite == "eintragen":
 
-    st.markdown("## Gegenstand eintragen")
+    st.markdown("## ➕ Gegenstand eintragen")
 
     uploaded_file = st.file_uploader(
         "Bild hochladen (JPG, PNG, JPEG)",
@@ -146,17 +146,17 @@ elif st.session_state.seite == "eintragen":
         image = Image.open(uploaded_file)
         st.image(image, caption="Hochgeladenes Bild", width=300)
 
-        with st.spinner("KI analysiert das Bild..."):
+        with st.spinner("🤖 KI analysiert das Bild..."):
             kategorie, konfidenz = klassifiziere_bild(image)
 
-        st.success(f"Erkannte Kategorie: **{kategorie}** ({konfidenz:.1f}% sicher)")
+        st.success(f"✅ Erkannte Kategorie: **{kategorie}** ({konfidenz:.1f}% sicher)")
 
         farbe     = st.text_input("Farbe des Gegenstands", placeholder="z.B. Blau")
         groesse   = st.selectbox("Größe", ["–", "XS", "S", "M", "L", "XL", "XXL", "Keine Angabe"])
         material  = st.text_input("Material (optional)", placeholder="z.B. Baumwolle")
         funddatum = st.date_input("Funddatum", value=date.today())
 
-        if st.button("Gegenstand eintragen", use_container_width=True):
+        if st.button("💾 Gegenstand eintragen", use_container_width=True):
             eintrag = {
                 "bild":      bild_zu_bytes(image),
                 "kategorie": kategorie,
@@ -166,7 +166,7 @@ elif st.session_state.seite == "eintragen":
                 "datum":     str(funddatum),
             }
             st.session_state.gegenstaende.append(eintrag)
-            st.success("Gegenstand wurde eingetragen!")
+            st.success("✅ Gegenstand wurde eingetragen!")
 
 # ─────────────────────────────────────────
 # SEITE: SUCHEN
@@ -174,9 +174,9 @@ elif st.session_state.seite == "eintragen":
 
 elif st.session_state.seite == "suchen":
 
-    st.markdown("## Gegenstand suchen")
+    st.markdown("## 🔎 Gegenstand suchen")
 
-    st.markdown("### Filter")
+    st.markdown("### 🎛️ Filter")
     f1, f2, f3, f4 = st.columns(4)
 
     with f1:
@@ -206,18 +206,18 @@ elif st.session_state.seite == "suchen":
     if filter_material.strip():
         ergebnisse = [e for e in ergebnisse if filter_material.strip().lower() in e["material"].lower()]
 
-    st.markdown("### Ergebnisse")
+    st.markdown("### 📋 Ergebnisse")
 
     if not ergebnisse:
-        st.info("Keine Gegenstände gefunden. Passe deine Filter an!")
+        st.info("😕 Keine Gegenstände gefunden. Passe deine Filter an!")
     else:
         cols = st.columns(3)
         for i, eintrag in enumerate(ergebnisse):
             with cols[i % 3]:
                 with st.container(border=True):
                     st.image(eintrag["bild"], use_container_width=True)
-                    st.markdown(f"**{eintrag['kategorie']}**")
-                    st.markdown(f"Farbe: {eintrag['farbe'] or '–'}")
-                    st.markdown(f"Größe: {eintrag['groesse']}")
-                    st.markdown(f"Material: {eintrag['material'] or '–'}")
-                    st.markdown(f"Datum: {eintrag['datum']}")
+                    st.markdown(f"**🏷️ {eintrag['kategorie']}**")
+                    st.markdown(f"🎨 Farbe: {eintrag['farbe'] or '–'}")
+                    st.markdown(f"📐 Größe: {eintrag['groesse']}")
+                    st.markdown(f"🧵 Material: {eintrag['material'] or '–'}")
+                    st.markdown(f"📅 Datum: {eintrag['datum']}")
