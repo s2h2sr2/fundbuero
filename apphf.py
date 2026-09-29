@@ -3,7 +3,9 @@ import numpy as np
 from PIL import Image
 import io
 from datetime import date
-from transformers import pipeline
+import timm
+import torch
+from torchvision import transforms
 
 # ─────────────────────────────────────────
 # Seitenkonfiguration
@@ -12,17 +14,34 @@ from transformers import pipeline
 st.set_page_config(page_title="Das Fundbüro", page_icon="🔍", layout="wide")
 
 # ─────────────────────────────────────────
-# Modell laden (einmalig, gecacht)
+# Modell laden
 # ─────────────────────────────────────────
 
 @st.cache_resource
 def load_model():
-    return pipeline(
-        "image-classification",
-        model="google/vit-base-patch16-224"
-    )
+    model = timm.create_model("mobilenetv3_large_100", pretrained=True)
+    model.eval()
+    return model
 
-classifier = load_model()
+@st.cache_resource
+def load_labels():
+    import urllib.request
+    url = "https://raw.githubusercontent.com/pytorch/hub/master/imagenet_classes.txt"
+    with urllib.request.urlopen(url) as f:
+        labels = [line.strip().decode("utf-8") for line in f.readlines()]
+    return labels
+
+model = load_model()
+labels = load_labels()
+
+transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize(
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225]
+    ),
+])
 
 # ─────────────────────────────────────────
 # Hilfsfunktionen
@@ -30,11 +49,20 @@ classifier = load_model()
 
 def klassifiziere_bild(image: Image.Image) -> tuple:
     img = image.convert("RGB")
-    ergebnisse = classifier(img, top_k=5)
-    bestes = ergebnisse[0]
-    label = bestes["label"]
-    konfidenz = bestes["score"] * 100
-    return label, konfidenz, ergebnisse
+    tensor = transform(img).unsqueeze(0)
+    with torch.no_grad():
+        output = model(tensor)
+    probabilities = torch.nn.functional.softmax(output[0], dim=0)
+    top5 = torch.topk(probabilities, 5)
+    ergebnisse = []
+    for i in range(5):
+        ergebnisse.append({
+            "label": labels[top5.indices[i]],
+            "score": float(top5.values[i])
+        })
+    beste_label = ergebnisse[0]["label"]
+    beste_konfidenz = ergebnisse[0]["score"] * 100
+    return beste_label, beste_konfidenz, ergebnisse
 
 def bild_zu_bytes(image: Image.Image) -> bytes:
     buf = io.BytesIO()
@@ -134,12 +162,10 @@ elif st.session_state.seite == "eintragen":
 
         st.success(f"✅ Erkannte Kategorie: **{kategorie}** ({konfidenz:.1f}% sicher)")
 
-        # Top-5 Vorschläge anzeigen
         with st.expander("📊 Alle Top-5 Vorschläge der KI anzeigen"):
             for r in top5:
                 st.markdown(f"- **{r['label']}** – {r['score']*100:.1f}%")
 
-        # Nutzer kann Kategorie überschreiben
         alle_labels = [r["label"] for r in top5]
         kategorie_final = st.selectbox(
             "Kategorie bestätigen oder anpassen:",
@@ -184,7 +210,6 @@ elif st.session_state.seite == "suchen":
     with f4:
         filter_material = st.text_input("Material", placeholder="z.B. Leder")
 
-    # Alle eingetragenen Kategorien dynamisch als Filteroptionen
     vorhandene_kategorien = sorted(set(
         e["kategorie"] for e in st.session_state.gegenstaende
     ))
